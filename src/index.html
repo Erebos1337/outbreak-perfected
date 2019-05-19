@@ -1,0 +1,44 @@
+<div id="app">
+  <div id="connection">
+    <label>channel:
+      <input type="text" v-model="channel" :disabled="connected">
+    </label>
+    <label>room:
+      <input type="text" v-model="room" :disabled="connected">
+    </label>
+    <label>name:
+      <input type="text" v-model="name" :disabled="connected">
+    </label>
+    <button type="button" @click="connect" :class="{ canconnect: canConnect, candisconnect: connected }">
+      {{ connected ? "disconnect" : "connect"}} 
+    </button>
+  </div>
+
+  <div id="protocolcontainer">
+    <label>message:
+			<input type="text" v-model="message" @keyup.enter="sendMessage" :disabled="!connected">
+		</label>
+
+    <h2>Protocol:</h2>
+    <div id="protocol">
+      <p v-for="msg in protocol">
+        {{ msg }}
+      </p>
+    </div>
+  </div>
+  <div id="solutionbox" :class="solutionDisplay.class" @click="triggerLockSolution">
+    <p id="solutiontext">{{solutionDisplay.text}}</p>
+  </div>
+  <button @click="triggerResetSolutions">Clear All</button>
+  <button @click="triggerResetInputs">Clear Input</button>
+  <label>smart mode<input type="checkbox" v-model="smartMode"></label>
+  <select v-model="element">
+    <option value="void">void</option>
+    <option value="arc">arc</option>
+    <option value="solar">solar</option>
+  </select>
+  <p class="progress">{{ countLocked + '/49' }}</p>
+  <div id="inputcontainer" @click="fullScreen">
+    <input-circle v-for="(n,i) in 6" :id="i" v-model="inputData[i]" :key="i" @input="sendInput(i,$event)"/>
+  </div>
+</div>

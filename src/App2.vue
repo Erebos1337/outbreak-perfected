@@ -1,0 +1,504 @@
+<template>
+  <div>
+    <div id="connection">
+      <v-form ref="form">
+        <v-container grid-list-md text-xs-center>
+          <v-layout row wrap justify-start>
+            <v-flex xs4>
+              <v-text-field v-model="channel" label="Channel" :disabled="connected" required></v-text-field>
+            </v-flex>
+            <v-flex xs4>
+              <v-text-field v-model="room" label="Room" :disabled="connected" required></v-text-field>
+            </v-flex>
+            <v-flex xs4>
+              <v-text-field v-model="name" :disabled="connected" label="Name"></v-text-field>
+            </v-flex>
+            <v-flex xs12>
+              <v-btn
+                :color="connected ? 'error' : 'success'"
+                @click="connect"
+                :disabled="!connected && !canConnect"
+              >{{ !connected ? 'Connect' : 'Disconnect' }}</v-btn>
+            </v-flex>
+          </v-layout>
+        </v-container>
+      </v-form>
+
+      <!-- <v-select
+          v-model="select"
+          :items="items"
+          :rules="[v => !!v || 'Item is required']"
+          label="Item"
+          required
+        ></v-select>
+
+        <v-checkbox
+          v-model="checkbox"
+          :rules="[v => !!v || 'You must agree to continue!']"
+          label="Do you agree?"
+          required
+      ></v-checkbox>-->
+    </div>
+
+    <div id="protocolcontainer">
+      <v-text-field
+        v-model="message"
+        label="Message"
+        @keyup.enter="sendMessage"
+        :disabled="!connected"
+      />
+
+      <h2>Protocol:</h2>
+      <div id="protocol">
+        <p v-for="(msg,idx) in protocol" :key="idx">{{ msg }}</p>
+      </div>
+    </div>
+    <div id="solutionbox" :class="solutionDisplay.class" @click="triggerLockSolution">
+      <p id="solutiontext">{{solutionDisplay.text}}</p>
+    </div>
+    <button @click="triggerResetSolutions">Clear All</button>
+    <button @click="triggerResetInputs">Clear Input</button>
+    <label>
+      smart mode
+      <input type="checkbox" v-model="smartMode">
+    </label>
+    <select v-model="element">
+      <option value="void">void</option>
+      <option value="arc">arc</option>
+      <option value="solar">solar</option>
+    </select>
+    <p class="progress">{{ countLocked + '/49' }}</p>
+    <div id="inputcontainer" @click="fullScreen">
+      <input-circle
+        v-for="(n,i) in 6"
+        :id="i"
+        v-model="inputData[i]"
+        :key="i"
+        @input="sendInput(i,$event)"
+      />
+    </div>
+  </div>
+</template>
+
+<script>
+import InputCircle from "./InputCircle.vue";
+import configurations from "./configurations";
+
+export default {
+  name: "app",
+  components: { InputCircle },
+  data: () => ({
+    connected: false,
+    channel: "yasg",
+    name: "",
+    room: "1337",
+    socket: null,
+    message: "",
+    protocol: [],
+    inputData: [0, 0, 0, 0, 0, 0],
+    configurations: configurations,
+    element: "arc",
+    smartMode: true,
+    lockedSolutions: {}
+  }),
+  methods: {
+    connect: function() {
+      if (!this.connected) {
+        let websocketurl = `wss://connect.websocket.in/${
+          this.channel
+        }?room_id=${this.room}`;
+        this.socket = new WebSocket(websocketurl);
+        if (!this.name) this.name = `Guest${Math.floor(Math.random() * 10000)}`;
+        if (this.socket) {
+          this.connected = true;
+          Object.assign(this.socket, this.socketListeners);
+        }
+      } else {
+        this.sendStatus("disconnected");
+        this.socket.close();
+        this.connected = false;
+      }
+    },
+    sendMessage: function() {
+      if (this.connected && this.socket && this.message) {
+        const data = {
+          type: "message",
+          content: this.message,
+          name: this.name
+        };
+        this.showMessage(data);
+        this.socket.send(JSON.stringify(data));
+        this.message = "";
+      }
+    },
+    sendStatus: function(status) {
+      if (this.connected && this.socket && status) {
+        const data = {
+          type: "status",
+          content: status,
+          name: this.name
+        };
+        this.showStatus(data);
+        this.socket.send(JSON.stringify(data));
+      }
+    },
+    sendInput: function(id, value) {
+      if (this.connected && this.socket) {
+        const msg = {
+          type: "input",
+          content: {
+            id,
+            value
+          },
+          name: this.name
+        };
+        this.socket.send(JSON.stringify(msg));
+      }
+    },
+    sendControl: function(eventType) {
+      if (this.connected && this.socket) {
+        const msg = {
+          type: "control",
+          content: {
+            event: eventType
+          },
+          name: this.name
+        };
+        this.socket.send(JSON.stringify(msg));
+      }
+    },
+    showStatus: function({ content, name }) {
+      this.protocol.push(`> ${name} ${content}`);
+    },
+    showMessage: function({ content, name }) {
+      if (content && name) {
+        if (name && name === this.name) {
+          this.protocol.push(`me: ${content}`);
+        } else {
+          this.protocol.push(`${name}: ${content}`);
+        }
+      }
+    },
+    processWsEvent: function(data) {
+      switch (data.type) {
+        case "message":
+          this.showMessage(data);
+          break;
+        case "status":
+          this.showStatus(data);
+          break;
+        case "input":
+          this.processInput(data);
+          break;
+        case "control":
+          this.processControl(data);
+          break;
+      }
+    },
+    processInput: function({ content }) {
+      const { id, value } = content;
+      if (
+        id !== undefined &&
+        id >= 0 &&
+        id < 6 &&
+        value &&
+        value > 0 &&
+        value <= 12
+      ) {
+        this.inputData.splice(id, 1, value);
+      }
+    },
+    processControl: function({ content }) {
+      const { event } = content;
+      switch (event) {
+        case "resetInputs":
+          this.resetInputs();
+          break;
+        case "resetAll":
+          this.resetSolutions();
+          break;
+        case "lockSolution":
+          this.lockSolution();
+          break;
+      }
+    },
+    triggerResetInputs: function() {
+      this.resetInputs();
+      this.sendControl("resetInputs");
+    },
+    resetInputs: function() {
+      this.inputData.splice(0, 6, [0, 0, 0, 0, 0, 0]);
+    },
+    triggerResetSolutions: function() {
+      this.resetSolutions();
+      this.sendControl("resetAll");
+    },
+    resetSolutions: function() {
+      this.lockedSolutions = {};
+      this.resetInputs();
+    },
+    triggerLockSolution: function() {
+      this.lockSolution();
+      this.sendControl("lockSolution");
+    },
+    lockSolution: function() {
+      if (this.solutions && this.solutions.length === 1) {
+        const solution = this.solutions[0];
+        const solutionName = solution[6] + solution[7];
+        this.$set(this.lockedSolutions, solutionName, true);
+        this.resetInputs();
+      }
+    },
+    fullScreen: function() {
+      // const docEl = document.getElementById("inputcontainer");
+      // const fs =
+      //   docEl.requestFullscreen ||
+      //   docEl.mozRequestFullScreen ||
+      //   docEl.webkitRequestFullScreen ||
+      //   docEl.msRequestFullscreen;
+      //fs.call(docEl);
+    }
+  },
+  computed: {
+    canConnect({ connected, channel, room }) {
+      return !connected && channel && room;
+    },
+    socketListeners: function({ processWsEvent, sendStatus }) {
+      return {
+        onopen: function() {
+          sendStatus("connected");
+        },
+        onclose: function() {
+          sendStatus("disconnected");
+        },
+        onmessage: function(event) {
+          if (event.type === "message") {
+            const data = JSON.parse(event.data);
+            processWsEvent(data);
+          }
+        }
+      };
+    },
+    currConfig: function({ configurations, element }) {
+      return configurations[element];
+    },
+    unlockedSolutions: function({ currConfig, smartMode, lockedSolutions }) {
+      return !smartMode
+        ? currConfig
+        : currConfig.filter(s => {
+            const name = s[6] + s[7];
+            return !lockedSolutions.hasOwnProperty(name);
+          });
+    },
+    solutions: function({ unlockedSolutions, inputData }) {
+      const setInputs = inputData
+        .map((v, k) => ({ k, v }))
+        .filter(o => o.v > 0);
+      if (setInputs.length === 0) return null;
+
+      const candidates = unlockedSolutions.filter(config => {
+        for (let input of setInputs) {
+          if (config[input.k] !== input.v) return false;
+        }
+        return true;
+      });
+      return candidates;
+    },
+    solutionDisplay: function({ solutions }) {
+      if (!solutions)
+        return {
+          text: "no inputs",
+          class: "noinput"
+        };
+      if (solutions.length === 0)
+        return {
+          text: "no solution",
+          class: "nosolution"
+        };
+      if (solutions.length === 1)
+        return {
+          text: solutions[0][6] + " " + solutions[0][7],
+          class: solutions[0][6].toLowerCase()
+        };
+      if (solutions.length > 1)
+        return {
+          text: `multiple solutions: ${solutions.length}`,
+          class: "multisolutions"
+        };
+      return "";
+    },
+    countLocked: function({ lockedSolutions }) {
+      return Object.getOwnPropertyNames(lockedSolutions).length - 1;
+    }
+  },
+  watch: {},
+  mounted: function() {
+    /* const urlParams = new URLSearchParams(top.location.search)
+				if(urlParams.has('channel')) {
+					this.channel = urlParams.get('channel');
+				}
+				if(urlParams.has('room')) {
+					this.room = urlParams.get('room');
+				} */
+  }
+};
+</script>
+
+<style lang="scss">
+#app {
+  font-family: "Avenir", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+}
+
+li {
+  margin: 8px 0;
+}
+
+h2 {
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+del {
+  color: rgba(0, 0, 0, 0.3);
+}
+
+#connection {
+  padding: 1rem;
+}
+
+#protocolcontainer {
+  border: 1px solid gray;
+  padding: 16px;
+  margin-top: 20px;
+
+  & > h2 {
+    margin-top: 12px;
+  }
+
+  & > #protocol {
+    background-color: #ccc;
+    height: 200px;
+    overflow-y: scroll;
+  }
+}
+
+.canconnect {
+  background-color: green;
+}
+
+.candisconnect {
+  background-color: #ff5555;
+}
+
+#inputcontainer {
+  height: 600px;
+  width: 100%;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  align-items: end;
+}
+
+#input1 {
+  width: 100%;
+  height: 100%;
+}
+
+.segment {
+  fill: cyan;
+  transform: rotate(calc(-15deg + 30deg * var(--n)));
+
+  &:hover {
+    fill: rgba(255, 255, 0, 0.4);
+  }
+
+  &.selected {
+    fill: yellow;
+    stroke: red;
+  }
+}
+
+svg {
+  width: 100%;
+  height: 100%;
+}
+
+$solutionColors: (
+  white: white,
+  blue: blue,
+  green: green,
+  cyan: cyan,
+  purple: purple,
+  yellow: yellow,
+  red: rgb(255, 40, 40)
+);
+
+#solutionbox {
+  border: 1px solid rgb(180, 180, 180);
+  text-align: center;
+  padding: 0;
+
+  @each $colorName, $colorValue in $solutionColors {
+    &.#{$colorName} {
+      background-color: $colorValue;
+
+      & > p {
+        font-weight: bold;
+        position: relative;
+
+        $border: calc(9px + 0.2rem);
+
+        &:after {
+          content: "";
+          position: absolute;
+          left: 100%;
+          top: 0%;
+          width: 0;
+          height: 0;
+          border-left: $border solid rgba(255, 255, 255, 0.8);
+          border-bottom: $border solid transparent;
+          border-top: $border solid transparent;
+          clear: both;
+        }
+        &:before {
+          content: "";
+          position: absolute;
+          left: calc(-9px - 0.2rem);
+          top: 0%;
+          width: 0;
+          height: 0;
+          border-right: $border solid rgba(255, 255, 255, 0.8);
+          border-bottom: $border solid transparent;
+          border-top: $border solid transparent;
+          clear: both;
+        }
+      }
+    }
+  }
+}
+
+#solutiontext {
+  text-align: center;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: inline-block;
+  margin: 0;
+  padding: 0.2rem 1rem;
+
+  .noinput > & {
+    color: rgb(150, 150, 150);
+  }
+
+  .nosolution > & {
+    color: red;
+  }
+
+  .multisolutions > & {
+    color: orange;
+  }
+}
+</style>
