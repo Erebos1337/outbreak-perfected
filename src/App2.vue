@@ -86,44 +86,74 @@
         <v-text-field
           class="px-0 py-0 mx-0"
           v-model="message"
-          label=""
           @keyup.enter="sendMessage"
           :disabled="!connected"
           prepend-inner-icon="send"
           hide-details
-          
         />
-        <v-container ref="protocol" id="protocol" class="grey lighten-3 px-0 text-xs-left scroll-y">
+        <v-container
+          ref="protocol"
+          id="protocol"
+          class="grey lighten-3 px-0 pt-0 text-xs-left scroll-y"
+        >
           <p v-for="(msg,idx) in protocol" :key="idx">{{ msg }}</p>
         </v-container>
       </v-card-text>
     </v-card>
 
     <v-card class="mt-3">
-      <div id="solutionbox" :class="solutionDisplay.class" @click="triggerLockSolution">
-        <p id="solutiontext">{{solutionDisplay.text}}</p>
-      </div>
-      <button @click="triggerResetSolutions">Clear All</button>
-      <button @click="triggerResetInputs">Clear Input</button>
-      <label>
-        smart mode
-        <input type="checkbox" v-model="smartMode">
-      </label>
-      <select v-model="element">
-        <option value="void">void</option>
-        <option value="arc">arc</option>
-        <option value="solar">solar</option>
-      </select>
-      <p class="progress">{{ countLocked + '/49' }}</p>
-      <div id="inputcontainer" @click="fullScreen">
-        <input-circle
-          v-for="(n,i) in 6"
-          :id="i"
-          v-model="inputData[i]"
-          :key="i"
-          @input="sendInput(i,$event)"
-        />
-      </div>
+      <v-card-title>
+        <v-layout justify-center>
+          <v-flex xs12>
+            <h1>
+              <v-icon medium>extension</v-icon>
+              Puzzle
+            </h1>
+          </v-flex>
+        </v-layout>
+      </v-card-title>
+      <v-container>
+        <v-layout row wrap>
+          <v-flex xs6>
+            <v-checkbox v-model="smartMode" label="Smart"></v-checkbox>
+          </v-flex>
+          <v-flex xs6>
+            <v-select
+              v-model="element"
+              :items="['void','arc','solar']"
+              :rules="[v => !!v || 'Item is required']"
+            ></v-select>
+          </v-flex>
+        </v-layout>
+        <v-layout row wrap justify-center>
+          <v-flex xs6>
+            <v-btn block @click="triggerResetSolutions">Clear All</v-btn>
+          </v-flex>
+          <v-flex xs6>
+            <v-btn block @click="triggerResetInputs">Clear Input</v-btn>
+          </v-flex>
+          <v-flex x12>
+            <p class="progress">{{ countLocked + '/49' }}</p>
+          </v-flex>
+          <!-- <div id="inputcontainer" @click="fullScreen"> -->
+          <!-- </div> -->
+          <v-flex xs12>
+            <div id="solutionbox" :class="solutionDisplay.class" @click="triggerLockSolution">
+              <p id="">{{solutionDisplay.text}}</p>
+            </div>
+          </v-flex>
+        </v-layout>
+        <v-layout row wrap id="inputcontainer" justify-space-between>
+            <input-circle
+              class="flex xs12"
+              v-for="(n,i) in 6"
+              :id="i"
+              v-model="inputData[i]"
+              :key="i"
+              @input="sendInput(i,$event)"
+            />
+        </v-layout>
+      </v-container>
     </v-card>
   </v-container>
 </template>
@@ -227,7 +257,9 @@ export default {
         }
         // this.elem = document.getElementById ( "scrolled-content" )
         // this.container = document.getElementById ( "scroll-target" )
-        this.$refs.protocol.scrollTop = Math.floor ( this.$refs.protocol.scrollHeight )
+        this.$refs.protocol.scrollTop = Math.floor(
+          this.$refs.protocol.scrollHeight
+        );
       }
     },
     processWsEvent: function(data) {
@@ -422,10 +454,8 @@ del {
 }
 
 #protocolcontainer {
-
   & > #protocol {
     height: 160px;
-
   }
 }
 
