@@ -1,30 +1,62 @@
 <template>
-  <div>
-    <div id="connection">
-      <v-form ref="form">
-        <v-container grid-list-md text-xs-center>
-          <v-layout row wrap justify-start>
-            <v-flex xs4>
-              <v-text-field v-model="channel" label="Channel" :disabled="connected" required></v-text-field>
-            </v-flex>
-            <v-flex xs4>
-              <v-text-field v-model="room" label="Room" :disabled="connected" required></v-text-field>
-            </v-flex>
-            <v-flex xs4>
-              <v-text-field v-model="name" :disabled="connected" label="Name"></v-text-field>
-            </v-flex>
-            <v-flex xs12>
-              <v-btn
-                :color="connected ? 'error' : 'success'"
-                @click="connect"
-                :disabled="!connected && !canConnect"
-              >{{ !connected ? 'Connect' : 'Disconnect' }}</v-btn>
-            </v-flex>
-          </v-layout>
-        </v-container>
-      </v-form>
+  <v-container grid-list-xl>
+    <v-card>
+      <v-card-title primary-title>
+        <v-layout justify-center>
+          <v-flex xs12>
+            <h1>
+              <v-icon medium>sync</v-icon>
+              Connection
+            </h1>
+          </v-flex>
+        </v-layout>
+      </v-card-title>
+      <v-card-text>
+        <v-layout row wrap justify-center>
+          <v-flex xs12 sm4 md3>
+            <v-text-field
+              prepend-icon="home"
+              v-model="channel"
+              label="Channel"
+              :disabled="connected"
+              hide-details
+              required
+            ></v-text-field>
+          </v-flex>
+          <v-flex xs12 sm4 md3>
+            <v-text-field
+              prepend-icon="room"
+              v-model="room"
+              label="Room"
+              :disabled="connected"
+              hide-details
+              required
+            ></v-text-field>
+          </v-flex>
+          <v-flex xs12 sm4 md3>
+            <v-text-field
+              prepend-icon="face"
+              v-model="name"
+              :disabled="connected"
+              hide-details
+              label="Name"
+            ></v-text-field>
+          </v-flex>
+          <v-flex xs12>
+            <v-btn
+              :color="connected ? 'error' : 'success'"
+              @click="connect"
+              :disabled="!connected && !canConnect"
+            >
+              <v-icon medium left>{{ !connected ? 'link' : 'link_off'}}</v-icon>
+              {{ !connected ? 'Connect' : 'Disconnect' }}
+            </v-btn>
+          </v-flex>
+        </v-layout>
+      </v-card-text>
+    </v-card>
 
-      <!-- <v-select
+    <!-- <v-select
           v-model="select"
           :items="items"
           :rules="[v => !!v || 'Item is required']"
@@ -37,47 +69,63 @@
           :rules="[v => !!v || 'You must agree to continue!']"
           label="Do you agree?"
           required
-      ></v-checkbox>-->
-    </div>
+    ></v-checkbox>-->
 
-    <div id="protocolcontainer">
-      <v-text-field
-        v-model="message"
-        label="Message"
-        @keyup.enter="sendMessage"
-        :disabled="!connected"
-      />
+    <v-card class="mt-3">
+      <v-card-title primary-title>
+        <v-layout justify-center>
+          <v-flex xs12>
+            <h1>
+              <v-icon medium>list_alt</v-icon>
+              Protocol
+            </h1>
+          </v-flex>
+        </v-layout>
+      </v-card-title>
+      <v-card-text class="grey lighten-3" id="protocolcontainer">
+        <v-text-field
+          class="px-0 py-0 mx-0"
+          v-model="message"
+          label=""
+          @keyup.enter="sendMessage"
+          :disabled="!connected"
+          prepend-inner-icon="send"
+          hide-details
+          
+        />
+        <v-container ref="protocol" id="protocol" class="grey lighten-3 px-0 text-xs-left scroll-y">
+          <p v-for="(msg,idx) in protocol" :key="idx">{{ msg }}</p>
+        </v-container>
+      </v-card-text>
+    </v-card>
 
-      <h2>Protocol:</h2>
-      <div id="protocol">
-        <p v-for="(msg,idx) in protocol" :key="idx">{{ msg }}</p>
+    <v-card class="mt-3">
+      <div id="solutionbox" :class="solutionDisplay.class" @click="triggerLockSolution">
+        <p id="solutiontext">{{solutionDisplay.text}}</p>
       </div>
-    </div>
-    <div id="solutionbox" :class="solutionDisplay.class" @click="triggerLockSolution">
-      <p id="solutiontext">{{solutionDisplay.text}}</p>
-    </div>
-    <button @click="triggerResetSolutions">Clear All</button>
-    <button @click="triggerResetInputs">Clear Input</button>
-    <label>
-      smart mode
-      <input type="checkbox" v-model="smartMode">
-    </label>
-    <select v-model="element">
-      <option value="void">void</option>
-      <option value="arc">arc</option>
-      <option value="solar">solar</option>
-    </select>
-    <p class="progress">{{ countLocked + '/49' }}</p>
-    <div id="inputcontainer" @click="fullScreen">
-      <input-circle
-        v-for="(n,i) in 6"
-        :id="i"
-        v-model="inputData[i]"
-        :key="i"
-        @input="sendInput(i,$event)"
-      />
-    </div>
-  </div>
+      <button @click="triggerResetSolutions">Clear All</button>
+      <button @click="triggerResetInputs">Clear Input</button>
+      <label>
+        smart mode
+        <input type="checkbox" v-model="smartMode">
+      </label>
+      <select v-model="element">
+        <option value="void">void</option>
+        <option value="arc">arc</option>
+        <option value="solar">solar</option>
+      </select>
+      <p class="progress">{{ countLocked + '/49' }}</p>
+      <div id="inputcontainer" @click="fullScreen">
+        <input-circle
+          v-for="(n,i) in 6"
+          :id="i"
+          v-model="inputData[i]"
+          :key="i"
+          @input="sendInput(i,$event)"
+        />
+      </div>
+    </v-card>
+  </v-container>
 </template>
 
 <script>
@@ -177,6 +225,9 @@ export default {
         } else {
           this.protocol.push(`${name}: ${content}`);
         }
+        // this.elem = document.getElementById ( "scrolled-content" )
+        // this.container = document.getElementById ( "scroll-target" )
+        this.$refs.protocol.scrollTop = Math.floor ( this.$refs.protocol.scrollHeight )
       }
     },
     processWsEvent: function(data) {
@@ -371,18 +422,10 @@ del {
 }
 
 #protocolcontainer {
-  border: 1px solid gray;
-  padding: 16px;
-  margin-top: 20px;
-
-  & > h2 {
-    margin-top: 12px;
-  }
 
   & > #protocol {
-    background-color: #ccc;
-    height: 200px;
-    overflow-y: scroll;
+    height: 160px;
+
   }
 }
 

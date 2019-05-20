@@ -2,6 +2,7 @@
   <v-app>
     <v-toolbar app>
       <v-toolbar-title class="headline text-uppercase">
+        <v-icon>home</v-icon>
         <span>Outbreak Perfected</span>
       </v-toolbar-title>
       <v-spacer></v-spacer>
