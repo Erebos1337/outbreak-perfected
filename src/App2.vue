@@ -5,8 +5,7 @@
         <v-layout justify-center>
           <v-flex xs12>
             <h1>
-              <v-icon medium>sync</v-icon>
-              Connection
+              <v-icon medium>sync</v-icon>Connection
             </h1>
           </v-flex>
         </v-layout>
@@ -76,8 +75,7 @@
         <v-layout justify-center>
           <v-flex xs12>
             <h1>
-              <v-icon medium>list_alt</v-icon>
-              Protocol
+              <v-icon medium>list_alt</v-icon>Protocol
             </h1>
           </v-flex>
         </v-layout>
@@ -106,8 +104,7 @@
         <v-layout justify-center>
           <v-flex xs12>
             <h1>
-              <v-icon medium>extension</v-icon>
-              Puzzle
+              <v-icon medium>extension</v-icon>Puzzle
             </h1>
           </v-flex>
         </v-layout>
@@ -135,23 +132,20 @@
           <v-flex x12>
             <p class="progress">{{ countLocked + '/49' }}</p>
           </v-flex>
-          <!-- <div id="inputcontainer" @click="fullScreen"> -->
-          <!-- </div> -->
           <v-flex xs12>
             <div id="solutionbox" :class="solutionDisplay.class" @click="triggerLockSolution">
-              <p id="">{{solutionDisplay.text}}</p>
+              <p id="solutiontext"><span>{{solutionDisplay.text}}</span></p>
             </div>
           </v-flex>
         </v-layout>
-        <v-layout row wrap id="inputcontainer" justify-space-between>
-            <input-circle
-              class="flex xs12"
-              v-for="(n,i) in 6"
-              :id="i"
-              v-model="inputData[i]"
-              :key="i"
-              @input="sendInput(i,$event)"
-            />
+        <v-layout row wrap justify-center>
+          <input-circle
+            v-for="(n,i) in 6"
+            :id="i"
+            v-model="inputData[i]"
+            :key="i"
+            @input="sendInput(i,$event)"
+          />
         </v-layout>
       </v-container>
     </v-card>
@@ -471,9 +465,6 @@ del {
   height: 600px;
   width: 100%;
   position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr 1fr;
   align-items: end;
 }
 
@@ -496,10 +487,10 @@ del {
   }
 }
 
-svg {
-  width: 100%;
-  height: 100%;
-}
+// svg {
+//   width: 100%;
+//   height: 100%;
+// }
 
 $solutionColors: (
   white: white,
@@ -515,6 +506,7 @@ $solutionColors: (
   border: 1px solid rgb(180, 180, 180);
   text-align: center;
   padding: 0;
+  border: 1px solid grey;
 
   @each $colorName, $colorValue in $solutionColors {
     &.#{$colorName} {
@@ -524,31 +516,60 @@ $solutionColors: (
         font-weight: bold;
         position: relative;
 
-        $border: calc(9px + 0.2rem);
-
+        &:before,
         &:after {
-          content: "";
+          width: 15%;
+          height: 50%;
           position: absolute;
           left: 100%;
-          top: 0%;
-          width: 0;
-          height: 0;
-          border-left: $border solid rgba(255, 255, 255, 0.8);
-          border-bottom: $border solid transparent;
-          border-top: $border solid transparent;
-          clear: both;
-        }
-        &:before {
           content: "";
-          position: absolute;
-          left: calc(-9px - 0.2rem);
-          top: 0%;
-          width: 0;
-          height: 0;
-          border-right: $border solid rgba(255, 255, 255, 0.8);
-          border-bottom: $border solid transparent;
-          border-top: $border solid transparent;
-          clear: both;
+        }
+
+        &:before {
+          top: 0px;
+          background: linear-gradient(
+            to right top,
+            rgba(255, 255, 255, 0.8) 50%,
+            transparent 50%
+          );
+        }
+
+        &:after {
+          top: 50%;
+          background: linear-gradient(
+            to right bottom,
+            rgba(255, 255, 255, 0.8) 50%,
+            transparent 50%
+          );
+        }
+
+        & > span {
+          &:before,
+          &:after {
+            width: 15%;
+            height: 50%;
+            position: absolute;
+            left: -15%;
+            content: "";
+          }
+
+          &:before {
+            top: 0px;
+            background: linear-gradient(
+              to left top,
+              rgba(255, 255, 255, 0.8) 50%,
+              transparent 50%
+            );
+          }
+
+          &:after {
+            top: 50%;
+            background: linear-gradient(
+              to left bottom,
+              rgba(255, 255, 255, 0.8) 50%,
+              transparent 50%
+            );
+          }
         }
       }
     }

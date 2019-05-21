@@ -1,7 +1,10 @@
  <template>
- <svg id="input1" viewBox="-55 -55 110 110" :preserveAspectRatio="preserveAspectRatio">
-    <path class="segment" v-for="n in 12" :key="n" :d="arcPath()" :stroke-opacity="strokeOpacity(n)" stroke-width="1" :fill="fillColor(n)" @click="selectSegment(n)" :class="{selected: selected==n}" :style="setSegCss(n)"/>
-  </svg>
+  <v-flex xs6 md4 class="circle-wrapper" :class="calcOffset">
+    <svg viewBox="-52 -52 104 104" width="100%" :preserveAspectRatio="preserveAspectRatio">
+      <path class="segment" v-for="n in 12" :key="n" :d="arcPath()" :stroke-opacity="strokeOpacity(n)" stroke-width="1" :fill="fillColor(n)" @click="selectSegment(n)" :class="{selected: selected==n}" :style="setSegCss(n)"/>
+      <text v-show="selected > 0" class="circle-value" x="0" y="0">{{ selected }}</text>
+    </svg>
+  </v-flex>
 </template>
 <script>
   export default {
@@ -14,6 +17,9 @@
   computed: {
     preserveAspectRatio: function({id}) {
       return (id % 2 === 0 ? "xMaxYMid" : "xMinYMid") + " meet";
+    },
+    calcOffset: function({id}) {
+      return (id %2 === 0 ? "" : "offset-md1");
     }
   },
   methods: {
@@ -53,3 +59,12 @@
   }
 }
 </script>
+<style lang="scss">
+  .circle-wrapper {
+    position: relative;
+  }
+  .circle-value {
+    text-anchor: middle;
+    alignment-baseline: central;
+  }
+</style>
