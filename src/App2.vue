@@ -169,7 +169,7 @@ export default {
     protocol: [],
     inputData: [0, 0, 0, 0, 0, 0],
     configurations: configurations,
-    element: "arc",
+    element: "solar",
     smartMode: true,
     lockedSolutions: {}
   }),
